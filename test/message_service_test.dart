@@ -21,7 +21,7 @@ void main() {
   });
 
   tearDown(() async {
-    sut.dispose();
+    //sut.dispose();
   });
   final user = User.fromJson({
     'id': '1234',
@@ -48,31 +48,30 @@ void main() {
     );
 
     final res = await sut.send(message);
-    expect(res.id, isNotEmpty);
+    expect(res, isNotEmpty);
   });
 
   test('successfully subscribe and receive messages', () async {
-    const contents = 'this is a message';
-    const contents1 = 'this is another message';
+   
     sut.messages(user2).listen(expectAsync1((message) {
          log("Message ::  ${message.toJson()}");
           expect(message.to, user2.id);
           expect(message.id, isNotEmpty);
-          //expect(message.contents, contents);
+          expect(message.contents, isNotEmpty);
         }, count: 2));
 
     Message message = Message(
       from: user.id!,
       to: user2.id!,
       timestamp: DateTime.now(),
-      contents: contents,
+      contents: "this is a message",
     );
 
     Message secondMessage = Message(
       from: user.id!,
       to: user2.id!,
       timestamp: DateTime.now(),
-      contents: contents1,
+      contents: "this is another message",
     );
 
     await sut.send(message);
@@ -98,6 +97,7 @@ void main() {
     await sut.send(secondMessage).whenComplete(
           () => sut.messages(user2).listen(
                 expectAsync1((message) {
+                  log("Message ::  ${message.toJson()}");
                   expect(message.to, user2.id);
                 }, count: 2),
               ),

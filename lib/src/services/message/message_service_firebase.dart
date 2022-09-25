@@ -50,35 +50,34 @@ class MessageService implements IMessageService {
 
   @override
   Future<Message> send(Message message) async {
-     var data = message.toJson();
-  
-    if(message.id == null){
-      await _messageCollection.add(message).then((value){
-        data['id'] = value.id; 
-      });
-    }else{
-      await _messageCollection.doc(message.id).update(message.toJson());
-    }
-    return Message.fromJson(data);
+   await _messageCollection.doc(message.id).set(message, SetOptions(
+        merge: true
+      ));
+    return message;
   }
 
    _startReceivingMessages(User activeUser) {
     _changefeed = _messageCollection
         .where('to', isEqualTo: activeUser.id)
-        .snapshots(includeMetadataChanges: false)
+        .snapshots()
         .asBroadcastStream()
-        .listen((snapData) async{
-      if (snapData.docs.isEmpty) return;
-     await Future.forEach(snapData.docs, (feedData) async {
-        final message = _messageFromFeed(feedData);
-        _controller.sink.add(message);
-        await _removeDeliverredMessage(message);
+        .listen((snapData)async{
+        if (snapData.docs.isEmpty) return;
+      snapData.docs.forEach((feedData)  async{
+        final message =  await _messageFromFeed(feedData.id);
+        if (message!=null) {
+             _controller.sink.add(message);
+            await _removeDeliverredMessage(feedData.data());
+        }
        });
     });
   }
 
-  Message _messageFromFeed(feedData) {
-    return feedData.data();
+  Future<Message?>  _messageFromFeed(String id) async{
+   final result =   await _messageCollection.doc(id).get();
+
+   return  result.data();
+     
   }
 
 
