@@ -23,6 +23,8 @@ void main() {
   tearDown(() async {
     //sut.dispose();
   });
+
+  
   final user = User.fromJson({
     'id': '1234',
     'username' : 'kashif',
@@ -102,5 +104,41 @@ void main() {
                 }, count: 2),
               ),
         );
+  });
+
+
+  test('successfully subscribe and receive old and new messages ', () async {
+    Message message = Message(
+      from: user.id!,
+      to: user2.id!,
+      timestamp: DateTime.now(),
+      contents: 'this is a message',
+    );
+
+    Message secondMessage = Message(
+      from: user.id!,
+      to: user2.id!,
+      timestamp: DateTime.now(),
+      contents: 'this is another message',
+    );
+
+     Message thirdMessage = Message(
+      from: user.id!,
+      to: user2.id!,
+      timestamp: DateTime.now(),
+      contents: 'this is third message',
+    );
+
+    await sut.send(message);
+    await sut.send(secondMessage).whenComplete(
+          () => sut.messages(user2).listen(
+                expectAsync1((message) {
+                  log("Message ::  ${message.toJson()}");
+                  expect(message.to, user2.id);
+                }, count: 3),
+              ),
+        );
+
+    await sut.send(thirdMessage);     
   });
 }
